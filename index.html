@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Operations</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: block;
+            margin: 10px auto;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4caf50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CRUD Operations for MongoDB</h1>
+
+        <!-- Create Form -->
+        <form id="createForm">
+            <h2>Create</h2>
+            <label for="createName">Name:</label>
+            <input type="text" id="createName" name="name" required>
+            <label for="createAge">Age:</label>
+            <input type="number" id="createAge" name="age" required>
+            <button type="submit">Create</button>
+        </form>
+
+        <!-- Read Form -->
+        <form id="readForm">
+            <h2>Read</h2>
+            <label for="readName">Name:</label>
+            <input type="text" id="readName" name="name" required>
+            <button type="submit">Read</button>
+        </form>
+
+        <!-- Table to display data -->
+        <table id="userData" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Age</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <!-- Update Form -->
+        <form id="updateForm">
+            <h2>Update</h2>
+            <label for="updateName">Name:</label>
+            <input type="text" id="updateName" name="name" required>
+            <label for="updateAge">Age:</label>
+            <input type="number" id="updateAge" name="age" required>
+            <button type="submit">Update</button>
+        </form>
+
+        <!-- Delete Form -->
+        <form id="deleteForm">
+            <h2>Delete</h2>
+            <label for="deleteName">Name:</label>
+            <input type="text" id="deleteName" name="name" required>
+            <button type="submit">Delete</button>
+        </form>
+    </div>
+
+    <script>
+        // Function to send HTTP requests
+        async function sendRequest(url, method, body) {
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (response.ok) {
+                    console.log(`${method} request successful`);
+                    return response.json();
+                } else {
+                    console.error(`${method} request failed: ${response.statusText}`);
+                    return null;
+                }
+            } catch (error) {
+                console.error(`${method} request failed:`, error);
+                return null;
+            }
+        }
+
+        // Create form event listener
+        document.getElementById('createForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const name = document.getElementById('createName').value;
+            const age = parseInt(document.getElementById('createAge').value);
+            
+            // Check if user already exists
+            const existingUser = await sendRequest(`/getByName/${name}`, 'GET');
+            if (existingUser) {
+                console.log('User already exists:', existingUser);
+                alert('User already exists!');
+            } else {
+                // Insert data
+                await sendRequest('/insert', 'POST', { name, age });
+            }
+        });
+
+        // Read form event listener
+        document.getElementById('readForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const name = document.getElementById('readName').value;
+            const userData = await sendRequest(`/getByName/${name}`, 'GET');
+            if (userData) {
+                displayUserData(userData);
+            } else {
+                console.log('User not found');
+                alert('User not found!');
+                document.getElementById('userData').style.display = 'none';
+            }
+        });
+
+        // Function to display user data in table format
+        function displayUserData(userData) {
+            const tableBody = document.querySelector('#userData tbody');
+            tableBody.innerHTML = ''; // Clear previous data
+
+            const row = tableBody.insertRow();
+            const nameCell = row.insertCell(0);
+            const ageCell = row.insertCell(1);
+
+            nameCell.textContent = userData.name;
+            ageCell.textContent = userData.age;
+
+            document.getElementById('userData').style.display = 'table';
+        }
+
+        // Update form event listener
+        document.getElementById('updateForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const name = document.getElementById('updateName').value;
+            const age = parseInt(document.getElementById('updateAge').value);
+            await sendRequest(`/update/${name}`, 'PUT', { age });
+        });
+
+        // Delete form event listener
+        document.getElementById('deleteForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const name = document.getElementById('deleteName').value;
+            await sendRequest(`/delete/${name}`, 'DELETE');
+        });
+    </script>
+</body>
+</html>
